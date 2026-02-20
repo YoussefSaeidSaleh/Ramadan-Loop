@@ -1,18 +1,19 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
-import { useRamadan } from '../context/RamadanContext';
-import { PageLayout } from '../components/PageLayout';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Check } from "lucide-react";
+import { useRamadan } from "../context/RamadanContext";
+import { PageLayout } from "../components/PageLayout";
+
 export function IntentionPage() {
   const { completeStep } = useRamadan();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const handleConfirm = () => {
     setIsSubmitting(true);
-    completeStep('intention');
+    completeStep("intention");
     setTimeout(() => {
-      navigate('/');
+      navigate("/");
     }, 1000);
   };
   return (
@@ -21,14 +22,14 @@ export function IntentionPage() {
         <motion.div
           initial={{
             scale: 0.9,
-            opacity: 0
+            opacity: 0,
           }}
           animate={{
             scale: 1,
-            opacity: 1
+            opacity: 1,
           }}
-          className="w-full bg-navy-card border border-navy-light p-8 rounded-3xl text-center shadow-xl relative overflow-hidden">
-
+          className="w-full bg-navy-card border border-navy-light p-8 rounded-3xl text-center shadow-xl relative overflow-hidden"
+        >
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold-primary to-transparent opacity-50" />
 
           <h3 className="text-xl text-gold-light mb-6 font-medium">
@@ -46,28 +47,28 @@ export function IntentionPage() {
 
         <motion.button
           whileHover={{
-            scale: 1.05
+            scale: 1.05,
           }}
           whileTap={{
-            scale: 0.95
+            scale: 0.95,
           }}
           onClick={handleConfirm}
           disabled={isSubmitting}
           className={`
             w-full max-w-xs py-4 rounded-xl text-xl font-bold transition-all duration-500 flex items-center justify-center gap-3 shadow-lg
-            ${isSubmitting ? 'bg-gold-primary text-navy-deep shadow-gold-glow/50' : 'bg-gold-primary text-navy-deep hover:bg-gold-light hover:shadow-gold-glow/30'}
-          `}>
-
-          {isSubmitting ?
-          <>
+            ${isSubmitting ? "bg-gold-primary text-navy-deep shadow-gold-glow/50" : "bg-gold-primary text-navy-deep hover:bg-gold-light hover:shadow-gold-glow/30"}
+          `}
+        >
+          {isSubmitting ? (
+            <>
               <Check className="w-6 h-6 animate-bounce" />
               <span>تم عقد النية</span>
-            </> :
-
-          'نويت اليوم'
-          }
+            </>
+          ) : (
+            "نويت اليوم"
+          )}
         </motion.button>
       </div>
-    </PageLayout>);
-
+    </PageLayout>
+  );
 }
