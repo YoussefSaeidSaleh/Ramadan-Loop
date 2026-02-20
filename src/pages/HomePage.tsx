@@ -1,13 +1,58 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Star, BookOpen, Clock, Heart, Sparkles } from "lucide-react";
 import { useRamadan } from "../context/RamadanContext";
 import { CircularProgress } from "../components/CircularProgress";
 import { motion } from "framer-motion";
 
+import { fetchPrayerTimings } from "../api/prayerApi";
+
 export function HomePage() {
   const { currentDay, progress, isStepCompleted, streak } = useRamadan();
   const navigate = useNavigate();
+  const [timeLeft, setTimeLeft] = useState<string>("00:00:00");
+
+  useEffect(() => {
+    let interval: number;
+
+    const loadTimings = async () => {
+      try {
+        const data = await fetchPrayerTimings("20-02-2026");
+        const maghribTime = data.data.timings.Maghrib;
+
+        const updateCountdown = () => {
+          const now = new Date();
+          const [hours, minutes] = maghribTime.split(":").map(Number);
+          const targetDate = new Date(2026, 1, 20, hours, minutes, 0);
+
+          const diff = targetDate.getTime() - now.getTime();
+
+          if (diff > 0) {
+            const h = Math.floor(diff / (1000 * 60 * 60));
+            const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((diff % (1000 * 60)) / 1000);
+            setTimeLeft(
+              `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(
+                s,
+              ).padStart(2, "0")}`,
+            );
+          } else {
+            setTimeLeft("00:00:00");
+          }
+        };
+
+        updateCountdown();
+        interval = window.setInterval(updateCountdown, 1000);
+      } catch (error) {
+        console.error("Failed to fetch prayer times:", error);
+      }
+    };
+
+    loadTimings();
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, []);
   const steps = [
     {
       id: "intention",
@@ -110,7 +155,7 @@ export function HomePage() {
               className="bg-navy-card/40 backdrop-blur-md border border-gold-primary/20 px-4 py-2 rounded-full flex items-center gap-2 text-xs text-gold-light hover:bg-navy-card/60 transition-colors"
             >
               <Clock className="w-3 h-3" />
-              <span>الإفطار بعد 01:20:35</span>
+              <span>الإفطار بعد {timeLeft}</span>
             </button>
           </motion.div>
 
@@ -131,7 +176,7 @@ export function HomePage() {
             className="absolute bottom-[20%] left-[10%] animate-float-medium pointer-events-auto"
           >
             <button
-              onClick={() => navigate("/worship")}
+              onClick={() => navigate("/ayah")}
               className="bg-navy-card/40 backdrop-blur-md border border-gold-primary/20 px-4 py-2 rounded-full flex items-center gap-2 text-xs text-gold-light hover:bg-navy-card/60 transition-colors"
             >
               <BookOpen className="w-3 h-3" />
