@@ -1,4 +1,10 @@
-import React, { useEffect, useState, createContext, useContext } from 'react';
+import React, {
+  useEffect,
+  useState,
+  createContext,
+  useContext,
+  ReactNode,
+} from "react";
 interface ReflectionData {
   mood: number; // 0-3
   text: string;
@@ -15,14 +21,14 @@ interface RamadanContextType {
   isStepCompleted: (id: string) => boolean;
 }
 const RamadanContext = createContext<RamadanContextType | undefined>(undefined);
-const STORAGE_KEY = 'ramadan_loop_v2_data';
+const STORAGE_KEY = "ramadan_loop_v2_data";
 interface StoredData {
   completedSteps: string[];
   currentDay: number;
   streak: number;
   lastCompletedDate: string | null;
 }
-export function RamadanProvider({ children }: {children: ReactNode;}) {
+export function RamadanProvider({ children }: { children: ReactNode }) {
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [currentDay, setCurrentDay] = useState(1);
   const [streak, setStreak] = useState(0);
@@ -39,11 +45,11 @@ export function RamadanProvider({ children }: {children: ReactNode;}) {
         // Check if it's a new day (simple check)
         const today = new Date().toDateString();
         if (parsed.lastCompletedDate && parsed.lastCompletedDate !== today) {
-
-
           // Logic for new day could go here, but for this demo we'll keep state
           // In a real app, we might reset completedSteps if it's a new day
-        }} catch (e) {console.error('Failed to parse ramadan data', e);
+        }
+      } catch (e) {
+        console.error("Failed to parse ramadan data", e);
       }
     }
   }, []);
@@ -53,27 +59,39 @@ export function RamadanProvider({ children }: {children: ReactNode;}) {
       completedSteps,
       currentDay,
       streak,
-      lastCompletedDate: new Date().toDateString()
+      lastCompletedDate: new Date().toDateString(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   }, [completedSteps, currentDay, streak]);
-  const completeStep = (id: string) => {
-    if (!completedSteps.includes(id)) {
-      setCompletedSteps((prev) => [...prev, id]);
-    }
-  };
-  const isStepCompleted = (id: string) => completedSteps.includes(id);
-  const saveReflection = (data: ReflectionData) => {
-    setReflection(data);
-    completeStep('reflection');
-  };
-  const resetDay = () => {
+  const completeStep = React.useCallback((id: string) => {
+    setCompletedSteps((prev) => {
+      if (prev.includes(id)) return prev;
+      return [...prev, id];
+    });
+  }, []);
+
+  const isStepCompleted = React.useCallback(
+    (id: string) => completedSteps.includes(id),
+    [completedSteps],
+  );
+
+  const saveReflection = React.useCallback(
+    (data: ReflectionData) => {
+      setReflection(data);
+      completeStep("reflection");
+    },
+    [completeStep],
+  );
+
+  const resetDay = React.useCallback(() => {
     setCompletedSteps([]);
     setCurrentDay((prev) => prev + 1);
     setStreak((prev) => prev + 1);
     setReflection(null);
-  };
-  const progress = Math.round(completedSteps.length / 5 * 100);
+  }, []);
+
+  const progress = Math.round((completedSteps.length / 5) * 100);
+
   return (
     <RamadanContext.Provider
       value={{
@@ -85,17 +103,18 @@ export function RamadanProvider({ children }: {children: ReactNode;}) {
         resetDay,
         saveReflection,
         progress,
-        isStepCompleted
-      }}>
-
+        isStepCompleted,
+      }}
+    >
       {children}
-    </RamadanContext.Provider>);
-
+    </RamadanContext.Provider>
+  );
 }
+
 export function useRamadan() {
-  const context = useContext(RamadanContext);
+  const context = React.useContext(RamadanContext);
   if (context === undefined) {
-    throw new Error('useRamadan must be used within a RamadanProvider');
+    throw new Error("useRamadan must be used within a RamadanProvider");
   }
   return context;
 }
