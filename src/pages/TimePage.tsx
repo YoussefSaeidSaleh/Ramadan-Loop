@@ -33,7 +33,12 @@ export function TimePage() {
 
     const loadTimings = async () => {
       try {
-        const data = await fetchPrayerTimings("20-02-2026");
+        const now = new Date();
+        const dateStr = `${String(now.getDate()).padStart(2, "0")}-${String(
+          now.getMonth() + 1,
+        ).padStart(2, "0")}-${now.getFullYear()}`;
+
+        const data = await fetchPrayerTimings(dateStr);
         const timings = data.data.timings;
 
         const prayerOrder: { key: keyof PrayerTimings; label: string }[] = [
@@ -45,7 +50,7 @@ export function TimePage() {
         ];
 
         const updateCountdown = () => {
-          const now = new Date();
+          const currentNow = new Date();
           let targetPrayer: {
             key: keyof PrayerTimings;
             label: string;
@@ -57,19 +62,42 @@ export function TimePage() {
           for (let i = 0; i < prayerOrder.length; i++) {
             const p = prayerOrder[i];
             const [h, m] = timings[p.key].split(":").map(Number);
-            const pDate = new Date(2026, 1, 20, h, m, 0);
+            const pDate = new Date(
+              currentNow.getFullYear(),
+              currentNow.getMonth(),
+              currentNow.getDate(),
+              h,
+              m,
+              0,
+            );
 
-            if (pDate > now) {
+            if (pDate > currentNow) {
               targetPrayer = { ...p, date: pDate };
               // Previous prayer for progress calculation
               if (i === 0) {
                 // If next is Fajr today, prev was Isha yesterday
+                const yesterday = new Date(currentNow);
+                yesterday.setDate(yesterday.getDate() - 1);
                 const [ph, pm] = timings.Isha.split(":").map(Number);
-                prevPrayerDate = new Date(2026, 1, 19, ph, pm, 0);
+                prevPrayerDate = new Date(
+                  yesterday.getFullYear(),
+                  yesterday.getMonth(),
+                  yesterday.getDate(),
+                  ph,
+                  pm,
+                  0,
+                );
               } else {
                 const prevP = prayerOrder[i - 1];
                 const [ph, pm] = timings[prevP.key].split(":").map(Number);
-                prevPrayerDate = new Date(2026, 1, 20, ph, pm, 0);
+                prevPrayerDate = new Date(
+                  currentNow.getFullYear(),
+                  currentNow.getMonth(),
+                  currentNow.getDate(),
+                  ph,
+                  pm,
+                  0,
+                );
               }
               break;
             }
@@ -77,13 +105,29 @@ export function TimePage() {
 
           // If no prayer found today, next is Fajr tomorrow
           if (!targetPrayer) {
+            const tomorrow = new Date(currentNow);
+            tomorrow.setDate(tomorrow.getDate() + 1);
             const [h, m] = timings.Fajr.split(":").map(Number);
             targetPrayer = {
               ...prayerOrder[0],
-              date: new Date(2026, 1, 21, h, m, 0),
+              date: new Date(
+                tomorrow.getFullYear(),
+                tomorrow.getMonth(),
+                tomorrow.getDate(),
+                h,
+                m,
+                0,
+              ),
             };
             const [ph, pm] = timings.Isha.split(":").map(Number);
-            prevPrayerDate = new Date(2026, 1, 20, ph, pm, 0);
+            prevPrayerDate = new Date(
+              currentNow.getFullYear(),
+              currentNow.getMonth(),
+              currentNow.getDate(),
+              ph,
+              pm,
+              0,
+            );
           }
 
           setNextPrayer({
@@ -91,10 +135,16 @@ export function TimePage() {
             label: targetPrayer.label,
           });
 
-          const diff = targetPrayer.date.getTime() - now.getTime();
+          const diff = Math.max(
+            0,
+            targetPrayer.date.getTime() - currentNow.getTime(),
+          );
           const totalMs =
             targetPrayer.date.getTime() - prevPrayerDate.getTime();
-          const elapsedMs = now.getTime() - prevPrayerDate.getTime();
+          const elapsedMs = Math.min(
+            totalMs,
+            Math.max(0, currentNow.getTime() - prevPrayerDate.getTime()),
+          );
 
           let currentProgress = (elapsedMs / totalMs) * 100;
           currentProgress = Math.max(0, Math.min(100, currentProgress));
@@ -165,7 +215,7 @@ export function TimePage() {
 
           <div className="text-center z-10">
             <p className="text-gray-400 text-sm mb-1">
-              متبقي لـ {nextPrayer?.label}
+              متبقي علي صلاة {nextPrayer?.label}
             </p>
             <h2 className="text-4xl font-bold text-white tabular-nums tracking-wider">
               {timeLeft}
