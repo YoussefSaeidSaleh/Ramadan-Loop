@@ -155,7 +155,7 @@ export function HomePage() {
               className="bg-navy-card/40 backdrop-blur-md border border-gold-primary/20 px-4 py-2 rounded-full flex items-center gap-2 text-xs text-gold-light hover:bg-navy-card/60 transition-colors"
             >
               <Clock className="w-3 h-3" />
-              <span>الإفطار بعد {timeLeft}</span>
+              <span>الإفطار بعد 10 {timeLeft}</span>
             </button>
           </motion.div>
 
