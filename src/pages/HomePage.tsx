@@ -11,19 +11,80 @@ export function HomePage() {
   const { currentDay, progress, isStepCompleted, streak } = useRamadan();
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState<string>("00:00:00");
+  const [countdownLabel, setCountdownLabel] = useState<string>("الإفطار بعد");
 
   useEffect(() => {
     let interval: number;
 
     const loadTimings = async () => {
       try {
-        const data = await fetchPrayerTimings("20-02-2026");
-        const maghribTime = data.data.timings.Maghrib;
+        const currentDate = new Date();
+        const dateStr = `${String(currentDate.getDate()).padStart(2, "0")}-${String(
+          currentDate.getMonth() + 1,
+        ).padStart(2, "0")}-${currentDate.getFullYear()}`;
+
+        // Get tomorrow's date string
+        const tomorrowDate = new Date(currentDate);
+        tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+        const tomorrowStr = `${String(tomorrowDate.getDate()).padStart(2, "0")}-${String(
+          tomorrowDate.getMonth() + 1,
+        ).padStart(2, "0")}-${tomorrowDate.getFullYear()}`;
+
+        const [todayData, tomorrowData] = await Promise.all([
+          fetchPrayerTimings(dateStr),
+          fetchPrayerTimings(tomorrowStr),
+        ]);
+
+        const timings = todayData.data.timings;
+        const tomorrowTimings = tomorrowData.data.timings;
 
         const updateCountdown = () => {
           const now = new Date();
-          const [hours, minutes] = maghribTime.split(":").map(Number);
-          const targetDate = new Date(2026, 1, 20, hours, minutes, 0);
+
+          const [fajrH, fajrM] = timings.Fajr.split(":").map(Number);
+          const [maghribH, maghribM] = timings.Maghrib.split(":").map(Number);
+          const [tomorrowFajrH, tomorrowFajrM] =
+            tomorrowTimings.Fajr.split(":").map(Number);
+
+          const fajrToday = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            fajrH,
+            fajrM,
+            0,
+          );
+
+          const maghribToday = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            maghribH,
+            maghribM,
+            0,
+          );
+
+          let targetDate: Date;
+          let label = "";
+
+          if (now < fajrToday) {
+            targetDate = fajrToday;
+            label = "الفجر بعد";
+          } else if (now >= fajrToday && now < maghribToday) {
+            targetDate = maghribToday;
+            label = "الإفطار بعد";
+          } else {
+            // After Maghrib, count down to Fajr tomorrow
+            targetDate = new Date(
+              now.getFullYear(),
+              now.getMonth(),
+              now.getDate() + 1,
+              tomorrowFajrH,
+              tomorrowFajrM,
+              0,
+            );
+            label = "الفجر بعد";
+          }
 
           const diff = targetDate.getTime() - now.getTime();
 
@@ -39,6 +100,7 @@ export function HomePage() {
           } else {
             setTimeLeft("00:00:00");
           }
+          setCountdownLabel(label);
         };
 
         updateCountdown();
@@ -155,7 +217,9 @@ export function HomePage() {
               className="bg-navy-card/40 backdrop-blur-md border border-gold-primary/20 px-4 py-2 rounded-full flex items-center gap-2 text-xs text-gold-light hover:bg-navy-card/60 transition-colors"
             >
               <Clock className="w-3 h-3" />
-              <span>الإفطار بعد {timeLeft}</span>
+              <span>
+                {countdownLabel} {timeLeft}
+              </span>
             </button>
           </motion.div>
 
